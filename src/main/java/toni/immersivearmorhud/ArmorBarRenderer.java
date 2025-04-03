@@ -1,23 +1,27 @@
 package toni.immersivearmorhud;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Matrix4f;
 import toni.immersivearmorhud.foundation.config.AllConfigs;
 import toni.lib.utils.ColorUtils;
 import toni.lib.utils.VersionUtils;
 
 import java.util.Map;
+
+#if mc >= 215
+import net.minecraft.client.renderer.RenderType;
+#else
+import net.minecraft.world.item.ArmorItem;
+#endif
+
+#if mc >= 211
+import net.minecraft.core.component.DataComponents;
+#endif
 
 public class ArmorBarRenderer {
     public static final EquipmentSlot[] ARMOR_SLOTS = new EquipmentSlot[] { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -61,10 +65,18 @@ public class ArmorBarRenderer {
     }
 
     private static float getDurabilityPercentage(ItemStack stack) {
-        int maxDurability = stack.getItem().getMaxDamage(stack);
+        int maxDurability = getMaxDamage(stack.getItem(), stack);
         int currentDurability = stack.getDamageValue();
 
         return 1f - (currentDurability / (float)maxDurability);
+    }
+
+    private static int getMaxDamage(Item item, ItemStack stack) {
+        #if mc >= 211
+        return (Integer) stack.getOrDefault(DataComponents.MAX_DAMAGE, 0);
+        #else
+        return item.getMaxDamage();
+        #endif
     }
 
     private static int getDurabilityColor(float durability) {
@@ -92,13 +104,15 @@ public class ArmorBarRenderer {
         for (int i = 0; i < ARMOR_SLOTS.length; i++) {
             var slot = ARMOR_SLOTS[i];
             ItemStack stack = player.getItemBySlot(slot);
-            if (!stack.isEmpty() && stack.getItem() instanceof ArmorItem) {
+            if (!stack.isEmpty()) {
                 flag = true;
                 int u = i * 8;
                 int x = (rightAligned ? 149 : 0) + xOffset + (screenWidth / 2) - 91 + (slotOffset * 8);
                 int y = yOffset + vanillaHeight;
 
-                #if mc >= 211
+                #if mc >= 215
+                graphics.blitSprite(RenderType::guiTextured, getTextureForItem(stack.getItem()), 33, 9, u, 0, x, y, 8, 8);
+                #elif mc >= 211
                 graphics.blitSprite(getTextureForItem(stack.getItem()), 33, 9, u, 0, x, y, 8, 8);
                 #else
                 graphics.blit(getTextureForItem(stack.getItem()), x, y, 8, 8, u, 0, 8, 8, 33, 9);

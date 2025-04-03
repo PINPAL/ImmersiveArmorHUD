@@ -1,5 +1,6 @@
 package toni.immersivearmorhud;
 
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import toni.immersivearmorhud.foundation.GuiOverlayHandler;
 import toni.immersivearmorhud.foundation.config.AllConfigs;
 import org.apache.logging.log4j.LogManager;
@@ -9,7 +10,11 @@ import org.apache.logging.log4j.Logger;
 #if FABRIC
     import net.fabricmc.api.ClientModInitializer;
     import net.fabricmc.api.ModInitializer;
-    #if after_21_1
+    #if mc >= 215
+    import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
+    import fuzs.forgeconfigapiport.fabric.api.v5.client.ConfigScreenFactoryRegistry;
+    import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+    #elif after_21_1
     import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
     import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.client.ConfigScreenFactoryRegistry;
     import net.neoforged.neoforge.client.gui.ConfigurationScreen;
@@ -22,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 #if FORGE
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -42,12 +48,18 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
+import toni.lib.utils.VersionUtils;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 #endif
 
 
 #if FORGELIKE
 @Mod("immersivearmorhud")
-@Mod.EventBusSubscriber(modid = ImmersiveArmorHUD.ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+#endif
+#if FORGE
+@EventBusSubscriber(modid = ImmersiveArmorHUD.ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 #endif
 public class ImmersiveArmorHUD #if FABRIC implements ModInitializer, ClientModInitializer #endif
 {
@@ -72,17 +84,20 @@ public class ImmersiveArmorHUD #if FABRIC implements ModInitializer, ClientModIn
             modContainer.registerConfig(type, spec);
             #endif
         });
+        #endif
 
         #if NEO
         modEventBus.addListener((FMLClientSetupEvent event) -> event.enqueueWork(() -> {
             modContainer.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         }));
-        #endif
 
+        modEventBus.addListener((final RegisterGuiLayersEvent evt) -> {
+            evt.registerAbove(VanillaGuiLayers.VEHICLE_HEALTH, VersionUtils.resource(ID, "armor_hud"), (gui, delta) -> GuiOverlayHandler.ARMOR_HUD.accept(gui));
+        });
         #endif
     }
 
-    #if FORGELIKE
+    #if FORGE
     @SubscribeEvent
     public static void onRegisterGuiOverlays(final RegisterGuiOverlaysEvent evt) {
         evt.registerAbove(VanillaGuiOverlay.MOUNT_HEALTH.id(), "armor_hud", GuiOverlayHandler.ARMOR_HUD);
@@ -92,13 +107,15 @@ public class ImmersiveArmorHUD #if FABRIC implements ModInitializer, ClientModIn
     #if FABRIC @Override #endif
     public void onInitialize() {
         #if FABRIC
-            AllConfigs.register((type, spec) -> {
-                #if AFTER_21_1
-                NeoForgeConfigRegistry.INSTANCE.register(ImmersiveArmorHUD.ID, type, spec);
-                #else
-                ForgeConfigRegistry.INSTANCE.register(ImmersiveArmorHUD.ID, type, spec);
-                #endif
-            });
+        AllConfigs.register((type, spec) -> {
+            #if mc >= 215
+            ConfigRegistry.INSTANCE.register(ImmersiveArmorHUD.ID, type, spec);
+            #elif AFTER_21_1
+            NeoForgeConfigRegistry.INSTANCE.register(ImmersiveArmorHUD.ID, type, spec);
+            #else
+            ForgeConfigRegistry.INSTANCE.register(ImmersiveArmorHUD.ID, type, spec);
+            #endif
+        });
         #endif
     }
 
