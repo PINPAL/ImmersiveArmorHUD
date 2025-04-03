@@ -42,7 +42,10 @@ public class ArmorBarRenderer {
         Map.entry("aether:phoenix", "phoenix"),
         Map.entry("aether:neptune", "neptune"),
         Map.entry("aether:valkyrie", "valkyrie"),
-        Map.entry("aether:obsidian", "obsidian")
+        Map.entry("aether:obsidian", "obsidian"),
+        Map.entry("create:copper", "copper_diving"),
+        Map.entry("create:netherite", "netherite_diving"),
+        Map.entry("create:cardboard", "cardboard")
     );
 
     private static ResourceLocation getTextureForItem(Item item) {
